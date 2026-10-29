@@ -151,3 +151,5 @@ Verification: restart -> new PIDs, curl 200,
   ProtectSystem=strict, ProtectHome, PrivateTmp. Unit file copied to deploy/.
 - Verification: active (running), enabled; curl 200; `ps` shows all 3 processes
   (1 master + 2 workers) running as cardtracker; access log lines in journalctl.
+- Reboot test: after `sudo reboot`, both card-tracker and postgresql@18-main active,
+  curl -> 200, with no manual steps.
