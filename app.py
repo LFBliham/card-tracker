@@ -86,7 +86,7 @@ TEAMS = [
 
 def get_db():
     # Connection details come from PGHOST, PGUSER, PGPASSWORD, etc. in the environment
-    return psycopg.connect(row_factory=dict_row)
+    return psycopg.connect(row_factory=dict_row, connect_timeout=3)
 
 
 def validate_card(form):
@@ -207,7 +207,16 @@ def index():
         """).fetchall()
     return render_template("index.html", cards=cards)
 
-
+@app.route("/health")
+def health():
+    try:
+        with get_db() as conn:
+            conn.execute("SELECT 1")
+    except psycopg.Error as e:
+        app.logger.error("Health check failed: database unreachable: %s", e)
+        return {"status": "error", "database": "unreachable"}, 503
+    return {"status": "ok", "database": "ok"}, 200
+    
 @app.route("/cards/new", methods=["GET", "POST"])
 def new_card():
     with get_db() as conn:
