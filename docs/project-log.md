@@ -164,3 +164,23 @@ valid evidence, since this service's output is stored at priority info. See inci
   and `sudo systemctl restart card-tracker`.
 - Verification: curl /health -> 200 on the service; database-stop test -> 503
   (see docs/incidents/001-database-stopped.md).
+  
+## 2026-10-29: Automated tests (pytest)
+
+- 16 tests in tests/test_app.py: card and copy validation (required fields, fixed lists,
+  print run, serial vs print run incl. 50/50 edge case, price as Decimal, invalid prices
+  incl. nan/Infinity, future dates) and /health outage handling.
+- /health outage simulated with monkeypatch (fake get_db that raises OperationalError)
+  -> 503 without stopping PostgreSQL. Flask test_client, no server needed.
+- Proved tests catch bugs: changed `>` to `>=` in serial check -> edge-case test failed
+  (pytest exit code 1, showed unexpected error message); reverted -> 16 passed.
+- pytest in requirements-dev.txt (kept out of production requirements.txt);
+  .pytest_cache/ added to .gitignore.
+ 
+## 2026-10-29: Card number sort order
+
+Symptom: main page listed cards as 16, 168, 190, 3, 317, 94, LE 1.
+Cause: card_number is TEXT (to allow values like "LE 1"), so ORDER BY sorted alphabetically.
+Fix: ORDER BY numeric-only card numbers first, cast to int (regex `^[0-9]+$` + `::int`),
+then non-numeric ones as text, then variant.
+Verification: deployed to service; page shows 3, 16, 94, 168, 190, 317, LE 1.
