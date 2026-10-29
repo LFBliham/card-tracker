@@ -203,7 +203,9 @@ def index():
             FROM cards c
             LEFT JOIN owned_copies o ON o.card_id = c.id
             GROUP BY c.id
-            ORDER BY c.card_number
+            ORDER BY (c.card_number ~ '^[0-9]+$') DESC,
+                     CASE WHEN c.card_number ~ '^[0-9]+$' THEN c.card_number::int END,
+                     c.card_number, c.variant
         """).fetchall()
     return render_template("index.html", cards=cards)
 
