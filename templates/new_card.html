@@ -30,8 +30,22 @@
     <p><label>Card name
       <input name="card_name" value="{{ form.get('card_name', '') }}" required maxlength="100">
     </label></p>
-    <p><label>Subset <input name="subset" value="{{ form.get('subset', '') }}"></label></p>
-    <p><label>Team <input name="team" value="{{ form.get('team', '') }}"></label></p>
+    <p><label>Subset
+      <select name="subset">
+        <option value="">None</option>
+        {% for s in subsets %}
+        <option {% if form.get('subset') == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </label></p>
+    <p><label>Team
+      <select name="team">
+        <option value="">No team</option>
+        {% for t in teams %}
+        <option {% if form.get('team') == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </label></p>
     <p><label>Variant
       <select name="variant">
         {% for v in variants %}

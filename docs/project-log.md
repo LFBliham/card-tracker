@@ -63,3 +63,61 @@ Problem: push rejected with GH007 (commits would publish private email).
 Fix: set Git email to GitHub noreply address; rewrote the 3 unpushed commits' author with
 `git rebase -r --root --exec 'git commit --amend --no-edit --author=...'`.
 Verification: `git log --format='%h %an <%ae>'` showed noreply on all commits; push succeeded.
+
+## 2026-10-29: owned_copies table
+
+- 003_create_owned_copies.sql: FK to cards (ON DELETE RESTRICT), condition CHECK list
+  (mint, near_mint, excellent, good, fair, poor), serial_number CHECK > 0,
+  purchase_price NUMERIC(8,2) CHECK >= 0, plus index on card_id
+  (PostgreSQL doesn't index foreign key columns automatically).
+- First run failed: syntax error (`.` instead of `,`); psql exited with code 3 (ON_ERROR_STOP).
+  Fixed typo and re-ran. Note: always include `-1` so a migration is all-or-nothing.
+- Verification: JOIN query showed copy of #168 Lando Norris, near_mint, Binder 1 page 1.
+
+## 2026-10-29: Credentials via environment (.env)
+
+- .env holds PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD (libpq reads these automatically,
+  so no connection details in code). `chmod 600 .env` -> -rw------- (owner only).
+- .env.example (placeholder password) committed; .env excluded by .gitignore.
+- Verification: `git status` never lists .env; GitHub repo shows only .env.example.
+
+## 2026-10-29: First Flask page
+
+- app.py index route: LEFT JOIN cards -> owned_copies with count(), so every checklist card
+  shows, including ones with 0 copies.
+- Jinja template auto-escapes output (XSS protection).
+- Verification: GET / returned 200, page showed cards from PostgreSQL.
+- Clean-environment test: in a new terminal (no manually loaded variables), Flask still
+  connected -> confirms python-dotenv loads .env.
+
+## 2026-10-29: Add-card and add-copy forms with server-side validation
+
+- Parameterised queries (%(name)s) throughout: values sent separately from SQL,
+  preventing SQL injection.
+- Post/Redirect/Get after successful submit (refresh doesn't resubmit).
+- Validation failures return HTTP 400 and re-fill the form.
+- DB UNIQUE violation caught and shown as a message (not a crash).
+- Copy validation: serial number must be <= card's print_run (cross-table rule a CHECK
+  constraint can't enforce); price as Decimal (rejects NaN/Infinity, >2 decimal places);
+  date not in the future.
+- Browser tests: second Lando copy -> Copies 2; added #317 Oscar Piastri Gold /50,
+  copy with serial 42 -> Copies 1.
+- curl tests (browser checks bypassed):
+  - empty card number + print_run 0 -> 400, both errors listed
+  - serial on unnumbered card -> 400
+  - bad price + future date -> 400
+  - copy for non-existent card 9999 -> 404
+  - serial 51 on a /50 card -> 400
+  - copy counts unchanged afterwards (nothing saved by rejected requests)
+
+## 2026-10-29: Inconsistent team/subset data
+
+Symptom: same team stored two ways ("Formula 1 Team" vs "Formula 1® Team");
+subset stored as "TURBO CHROME" vs "Turbo Chrome".
+Cause: subset and team were free-text fields with no restrictions.
+Fix: inside BEGIN ... COMMIT, SELECT to check, then UPDATE (UPDATE 1 subset, UPDATE 2 team),
+SELECT again to verify before COMMIT.
+Prevention: subset and team restricted to fixed lists (dropdowns + server-side validation).
+Resolved earlier open decision: team names stored as full official names, without ®.
+Verification: curl POST with "McLaren Mastercard Formula 1® Team" -> 400.
+Future improvement: move subsets/teams into database tables linked to each set.

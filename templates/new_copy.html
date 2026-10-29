@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Add copy</title>
+</head>
+<body>
+  <h1>Add a copy: #{{ card.card_number }} {{ card.card_name }} ({{ card.variant }})</h1>
+  <p><a href="{{ url_for('index') }}">Back to cards</a></p>
+
+  {% if errors %}
+  <ul>
+    {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+
+  <form method="post">
+    <p><label>Condition
+      <select name="condition">
+        <option value="">Not recorded</option>
+        {% for c in conditions %}
+        <option value="{{ c }}" {% if form.get('condition') == c %}selected{% endif %}>
+          {{ c.replace('_', ' ').title() }}
+        </option>
+        {% endfor %}
+      </select>
+    </label></p>
+    {% if card.print_run %}
+    <p><label>Serial number (out of {{ card.print_run }})
+      <input name="serial_number" type="number" min="1" max="{{ card.print_run }}"
+             value="{{ form.get('serial_number', '') }}">
+    </label></p>
+    {% endif %}
+    <p><label>Storage <input name="storage" maxlength="100" value="{{ form.get('storage', '') }}"></label></p>
+    <p><label>Price (€) <input name="purchase_price" value="{{ form.get('purchase_price', '') }}"></label></p>
+    <p><label>Bought from <input name="purchased_from" maxlength="100" value="{{ form.get('purchased_from', '') }}"></label></p>
+    <p><label>Date acquired <input name="date_acquired" type="date" value="{{ form.get('date_acquired', '') }}"></label></p>
+    <p><label>Notes<br><textarea name="notes" maxlength="1000">{{ form.get('notes', '') }}</textarea></label></p>
+    <button type="submit">Add copy</button>
+  </form>
+</body>
+</html>

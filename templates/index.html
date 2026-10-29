@@ -9,7 +9,7 @@
   <p><a href="{{ url_for('new_card') }}">Add a card</a></p>
   <table border="1">
     <tr>
-      <th>#</th><th>Name</th><th>Subset</th><th>Team</th><th>Variant</th><th>Copies</th>
+      <th>#</th><th>Name</th><th>Subset</th><th>Team</th><th>Variant</th><th>Copies</th><th></th>
     </tr>
     {% for card in cards %}
     <tr>
@@ -19,9 +19,10 @@
       <td>{{ card.team or '' }}</td>
       <td>{{ card.variant }}</td>
       <td>{{ card.copies }}</td>
+      <td><a href="{{ url_for('new_copy', card_id=card.id) }}">Add copy</a></td>
     </tr>
     {% else %}
-    <tr><td colspan="6">No cards yet.</td></tr>
+    <tr><td colspan="7">No cards yet.</td></tr>
     {% endfor %}
   </table>
 </body>
