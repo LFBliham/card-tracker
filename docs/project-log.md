@@ -121,3 +121,33 @@ Prevention: subset and team restricted to fixed lists (dropdowns + server-side v
 Resolved earlier open decision: team names stored as full official names, without ®.
 Verification: curl POST with "McLaren Mastercard Formula 1® Team" -> 400.
 Future improvement: move subsets/teams into database tables linked to each set.
+
+## 2026-10-29: Gunicorn control socket permission error
+
+Symptom: after starting card-tracker.service, journal showed
+`[ERROR] Control server error: [Errno 13] Permission denied: '/home/cardtracker'`.
+App still served requests (curl -> 200).
+Investigation:
+- `getent passwd cardtracker` -> home field is /home/cardtracker, which doesn't exist
+  (--no-create-home records the path but doesn't create it).
+- `gunicorn --help | grep -i control` -> Gunicorn 26 opens a control socket by default
+  (/run/user/<uid>/gunicorn.ctl). The service user has no login session, so no such
+  directory, and it fell back to the home path, also blocked by ProtectHome=true.
+Root cause: Gunicorn's default control socket location isn't usable by a no-login system user.
+Fix: added `--no-control-socket` to ExecStart (feature not used; disabling reduces attack surface).
+Alternative considered: RuntimeDirectory=card-tracker + --control-socket /run/card-tracker/gunicorn.ctl.
+Verification: restart -> new PIDs, curl 200,
+`journalctl -u card-tracker -p err --since "2 minutes ago"` -> No entries.
+
+## 2026-10-29: Deployed as a systemd service
+
+- Gunicorn 26.2.0 (2 sync workers) on 127.0.0.1:8000 replaces Flask dev server.
+- Deliberate test before deploying: Gunicorn without PG* variables -> HTTP 500
+  (psycopg fell back to socket + peer auth as jackjack). Loading env -> 200.
+- System user `cardtracker` (uid 996, nologin, no home).
+- Code: /opt/card-tracker (cloned from GitHub, root-owned, read-only to service).
+- Config: /etc/card-tracker/card-tracker.env, root:cardtracker, 640.
+- Unit: User=cardtracker, EnvironmentFile, Restart=on-failure, NoNewPrivileges,
+  ProtectSystem=strict, ProtectHome, PrivateTmp. Unit file copied to deploy/.
+- Verification: active (running), enabled; curl 200; `ps` shows all 3 processes
+  (1 master + 2 workers) running as cardtracker; access log lines in journalctl.

@@ -1,0 +1,22 @@
+[Unit]
+Description=Card Tracker (Flask app served by Gunicorn)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+User=cardtracker
+Group=cardtracker
+WorkingDirectory=/opt/card-tracker
+EnvironmentFile=/etc/card-tracker/card-tracker.env
+ExecStart=/opt/card-tracker/.venv/bin/gunicorn --bind 127.0.0.1:8000 --workers 2 --access-logfile - --no-control-socket app:app
+Restart=on-failure
+RestartSec=5
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
