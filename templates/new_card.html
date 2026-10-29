@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Add card</title>
+</head>
+<body>
+  <h1>Add a card to the checklist</h1>
+  <p><a href="{{ url_for('index') }}">Back to cards</a></p>
+
+  {% if errors %}
+  <ul>
+    {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+
+  <form method="post">
+    <p><label>Set
+      <select name="set_id">
+        {% for s in sets %}
+        <option value="{{ s.id }}" {% if form.get('set_id') == s.id|string %}selected{% endif %}>
+          {{ s.year }} {{ s.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </label></p>
+    <p><label>Card number
+      <input name="card_number" value="{{ form.get('card_number', '') }}" required maxlength="10">
+    </label></p>
+    <p><label>Card name
+      <input name="card_name" value="{{ form.get('card_name', '') }}" required maxlength="100">
+    </label></p>
+    <p><label>Subset <input name="subset" value="{{ form.get('subset', '') }}"></label></p>
+    <p><label>Team <input name="team" value="{{ form.get('team', '') }}"></label></p>
+    <p><label>Variant
+      <select name="variant">
+        {% for v in variants %}
+        <option {% if form.get('variant') == v %}selected{% endif %}>{{ v }}</option>
+        {% endfor %}
+      </select>
+    </label></p>
+    <p><label>Print run
+      <input name="print_run" type="number" min="1" value="{{ form.get('print_run', '') }}">
+    </label></p>
+    <p><label>
+      <input type="checkbox" name="wishlisted" {% if form.get('wishlisted') %}checked{% endif %}>
+      On wishlist
+    </label></p>
+    <button type="submit">Add card</button>
+  </form>
+</body>
+</html>
