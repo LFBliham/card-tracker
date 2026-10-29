@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Card Tracker</title>
+</head>
+<body>
+  <h1>Card Tracker</h1>
+  <table border="1">
+    <tr>
+      <th>#</th><th>Name</th><th>Subset</th><th>Team</th><th>Variant</th><th>Copies</th>
+    </tr>
+    {% for card in cards %}
+    <tr>
+      <td>{{ card.card_number }}</td>
+      <td>{{ card.card_name }}</td>
+      <td>{{ card.subset or '' }}</td>
+      <td>{{ card.team or '' }}</td>
+      <td>{{ card.variant }}</td>
+      <td>{{ card.copies }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6">No cards yet.</td></tr>
+    {% endfor %}
+  </table>
+</body>
+</html>
