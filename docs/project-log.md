@@ -136,8 +136,9 @@ Investigation:
 Root cause: Gunicorn's default control socket location isn't usable by a no-login system user.
 Fix: added `--no-control-socket` to ExecStart (feature not used; disabling reduces attack surface).
 Alternative considered: RuntimeDirectory=card-tracker + --control-socket /run/card-tracker/gunicorn.ctl.
-Verification: restart -> new PIDs, curl 200,
-`journalctl -u card-tracker -p err --since "2 minutes ago"` -> No entries.
+Verification: restart -> new PIDs, curl 200, startup log in `systemctl status` no longer
+shows the "Control server error" line. (Note: an earlier `journalctl -p err` check was not
+valid evidence, since this service's output is stored at priority info. See incident 001.)
 
 ## 2026-10-29: Deployed as a systemd service
 
@@ -153,3 +154,13 @@ Verification: restart -> new PIDs, curl 200,
   (1 master + 2 workers) running as cardtracker; access log lines in journalctl.
 - Reboot test: after `sudo reboot`, both card-tracker and postgresql@18-main active,
   curl -> 200, with no manual steps.
+
+## 2026-10-29: /health endpoint
+
+- GET /health runs `SELECT 1`; returns 200 {"status":"ok"} or 503 {"database":"unreachable"}.
+- connect_timeout=3 added to database connections (fail fast if the database is down).
+- Error details logged (app.logger.error), not returned in the response.
+- Deploy process: commit and push, then `sudo git -C /opt/card-tracker pull`
+  and `sudo systemctl restart card-tracker`.
+- Verification: curl /health -> 200 on the service; database-stop test -> 503
+  (see docs/incidents/001-database-stopped.md).
